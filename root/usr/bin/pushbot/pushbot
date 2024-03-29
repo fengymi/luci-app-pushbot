@@ -981,7 +981,7 @@ function login_send(){
 	cat ${dir}login_monitor|grep -i "accepted login"|awk '{print $4" "$NF}' >> ${dir}web_login
 	cat ${dir}login_monitor|grep -i "Password auth succeeded\|Pubkey auth succeeded"|grep -Eo "[0-9]{2}:[0-9]{2}:[0-9]{2}.*[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"|awk '{print $1" "$NF" "$5}' >> ${dir}ssh_login
 	cat ${dir}login_monitor|grep -i "failed login"|grep -Eo "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" >> ${dir}web_failed
-	cat ${dir}login_monitor|grep -i "Bad password attempt\|Exit before auth from .*: Exited normally\|Failed password"|grep -Eo "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"  >> ${dir}ssh_failed
+	cat ${dir}login_monitor|grep -i "Bad password attempt\|Exit before auth from .*: \|Failed password"|grep -Eo "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"  >> ${dir}ssh_failed
 	echo "" > ${dir}login_monitor
 	add_ip_black
 
@@ -1033,11 +1033,10 @@ function login_send(){
 	unset login_ip login_ip_list
 
 	web_failed_notify
-	unset login_ip login_ip_list
+	unset login_ip
 
 	ssh_failed_notify
-	unset login_ip login_ip_list
-
+	unset login_ip
 }
 
 function web_failed_notify() {
@@ -1061,6 +1060,7 @@ function web_failed_notify() {
         content="${content}${str_splitline}${str_title_start}${font_red} 登录失败来源${font_end}${str_title_end}${str_linefeed}${str_tab}设备 IP： ${str_space}${str_space}${str_space}${str_space}${ip_list_string}"
       fi
     fi
+    echo "${title}\n${content}" >>  "${logfile}"
   fi
   unset error_ip_list
 }
@@ -1070,12 +1070,8 @@ function ssh_failed_notify() {
   # 统一执行
   # cat ${dir}login_monitor|grep -i "Bad password attempt\|Exit before auth from .*: Exited normally\|Failed password"|grep -Eo "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"  >> ${dir}ssh_failed
 
-  echo "${!login_ip_list[@]}" >>  /tmp/pushbot/pushbot.log
   ## 统计前三
   get_and_del_login_ip_list "${dir}ssh_failed" $login_max_num 3
-
-  echo "${!login_ip_list[@]}" >>  /tmp/pushbot/pushbot.log
-
   if [ "${#error_ip_list[@]}" -ge 1 ]; then
     local ip_list_string=`printf "%s," "${error_ip_list[@]}"`
     echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】设备 ${ip_list_string} 通过 SSH 频繁尝试登录" >> ${logfile}
@@ -1091,7 +1087,7 @@ function ssh_failed_notify() {
         content="${content}${str_splitline}${str_title_start}${font_red} 登录失败来源${font_end}${str_title_end}${str_linefeed}${str_tab}设备 IP： ${str_space}${str_space}${str_space}${str_space}${ip_list_string}"
       fi
     fi
-
+    echo "${title}\n${content}" >>  "${logfile}"
   fi
   unset error_ip_list
 }
